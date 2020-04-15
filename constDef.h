@@ -119,7 +119,7 @@
  * A jeœli pójdziemy jeszcze dalej i zaczniemy robiæ gwa³towne "poci¹gniêcia" rolk¹ to wszsytkie "klikniêcia" rolki które mog³y by siê pojawiæ zostan¹
  * zebrane w ramach jednego wywo³ania z kodem 0x83 (0xC3), i tak jeœli bêdziemy jeszcze mocniej krêciæ rolk¹ to ka¿de jedno "poci¹gniêcie" bêdzie zbierane
  * do jednego wywo³ania, tylko z wy¿szym numerem (0x84/0xC4, 0x85/0xC5, 0x86/0xC6).
- * Koñcówka 6 to najwy¿sza wartoœæ jak¹ uda³o mi siê uzyskaæ, a by³o to ju¿ naprawdê "szleñcze" obchodzenie siê z t¹ rolk¹ :)
+ * Koñcówka 6 to najwy¿sza wartoœæ jak¹ uda³o mi siê uzyskaæ, a by³o to ju¿ naprawdê "szaleñcze" obchodzenie siê z t¹ rolk¹ :)
  */
 
 #endif /* CONSTDEF_H_ */

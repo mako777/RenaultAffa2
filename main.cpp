@@ -31,6 +31,15 @@
 #include "usart.h"
 #include "constDef.h"
 #include "AVRTools/Analog2Digital.h"
+#include <stdint.h>
+#include <avr/wdt.h>
+
+void get_mcusr(void) __attribute__((naked))
+__attribute__((section(".init3")));
+void get_mcusr(void) {
+	MCUSR = 0;
+	wdt_disable();
+}
 
 #define TIMER0_COUNTER_START	105
 
@@ -48,7 +57,7 @@ void displayText(const char *text){
 	write_text_sagem(text, SCROLL_TEXT);
 }
 
-#define DELAYY		_delay_ms(300)
+#define DELAYY		_delay_ms(125)
 uint8_t displayReset = 0, displayWatchdog = 0;
 void welcomeScreen(union timeoutarg arg){
 	switch (arg.v) {
@@ -71,18 +80,23 @@ void welcomeScreen(union timeoutarg arg){
 		DELAYY;
 		sagem_affa2_set_icon(ICON_DOLBY_ON);
 		arg.v = 2;
-		timeout(2000, welcomeScreen, arg);
+		timeout(1000, welcomeScreen, arg);
 		break;
 	}
 	case 2: {
-		sagem_affa2_clr_icon(ICON_ALL);
-		displayText("gotowy");
+//		sagem_affa2_clr_icon(ICON_ALL);
+		sagem_affa2_set_icon(ICON_AF_BLINK);
+		sagem_affa2_set_icon(ICON_I_NEWS_BLINK);
+		sagem_affa2_set_icon(ICON_I_TRAFFIC_BLINK);
+		sagem_affa2_set_icon(ICON_TUNER_LIST_BLINK);
+		displayText("Gotowy");
 		arg.v = 3;
-		timeout(10000, welcomeScreen, arg);
+		timeout(3000, welcomeScreen, arg);
 		break;
 	}
 	case 3: {
 //		displayText(" ");
+		sagem_affa2_clr_icon(ICON_ALL);
 		write_text_sagem("*x*x*x*x*x*x*x*xx*x*x*x*", SWITCH_TEXT);
 		break;
 	}
@@ -123,7 +137,6 @@ void r2rSet(uint8_t r2r){
 		union timeoutarg arg;
 		timeout(R2RDELAY, r2rReset, arg);		// Dajmy chwilê ¿eby radio za³apa³o ¿e coœ zosta³o klikniête, po czym "odkliknijmy" to
 	}
-
 }
 
 float measureVoltage(int adcInputPin){
@@ -156,16 +169,17 @@ float measureVoltage(int adcInputPin){
 
 float voltage = 0.0;
 uint8_t refreshDisplay = 0;
+char voltBuff[12];
 void displayVoltage(union timeoutarg arg){
 	if(refreshDisplay){
-		char voltBuff[9];
 		sprintf(voltBuff, "%6.2f V", (double)voltage);
 		voltBuff[3] = ',';
 		displayText(voltBuff);
-		timeout(1500, displayVoltage, arg);
+		timeout(777, displayVoltage, arg);
 	}
 }
 
+uint8_t blink = 1;
 int main() {
 	LED_PORT_CONF;
 	LCD_RADIO_ON_CONF;
@@ -203,10 +217,12 @@ int main() {
 
 	uint8_t uartBytes, dataRead[6], voltageBuffInd = 0;
 	float voltageBuff[20];
+	wdt_enable(WDTO_8S);
 	while (1) {
 		if(timer1ms > 10){		// Wywo³a siê co 1ms
 			timer1ms = 1;
 			timertick();
+			wdt_reset();
 
 			if(uart0_AvailableBytes() > 0){
 				_delay_ms(50);
@@ -280,6 +296,7 @@ int main() {
 							displayText("Play/Pauza");
 //							R2R_SET_15;
 							r2rSet(15);
+
 							} break;
 						case REMOTE_KEY_SRC_RIGHT_LONG: {
 							printf("Przycisk na górze prawy d³ugo\n");
@@ -304,24 +321,48 @@ int main() {
 							displayText("Glosniej");
 //							R2R_SET_01;
 							r2rSet(1);
+							if(blink == 0){
+								sagem_affa2_clr_icon(ICON_DOLBY_ON);
+								blink = 1;
+							}
 							} break;
 						case REMOTE_KEY_VOLUME_UP_HOLD: {
 							printf("Przycisk g³oœniej trzyma\n");
-							displayText("Glosn tr");
+							displayText("Glosniej");
 //							R2R_SET_01;
 							r2rSet(1);
+							if(blink){
+								sagem_affa2_set_icon(ICON_DOLBY_ON);
+								blink = 0;
+							}
+							else{
+								sagem_affa2_clr_icon(ICON_DOLBY_ON);
+								blink = 1;
+							}
 							} break;
 						case REMOTE_KEY_VOLUME_DOWN: {
 							printf("Przycisk ciszej\n");
 							displayText("Ciszej");
 //							R2R_SET_02;
 							r2rSet(2);
+							if(blink == 0){
+								sagem_affa2_clr_icon(ICON_DOLBY_ON);
+								blink = 1;
+							}
 							} break;
 						case REMOTE_KEY_VOLUME_DOWN_HOLD: {
 							printf("Przycisk ciszej trzyma\n");
-							displayText("Cisze tr");
+							displayText("Ciszej");
 //							R2R_SET_02;
 							r2rSet(2);
+							if(blink){
+								sagem_affa2_set_icon(ICON_DOLBY_ON);
+								blink = 0;
+							}
+							else{
+								sagem_affa2_clr_icon(ICON_DOLBY_ON);
+								blink = 1;
+							}
 							} break;
 						case REMOTE_KEY_MUTE: {			// naciœniête jednoczeœnie volume up i down
 							printf("Przycisk wycisz\n");
